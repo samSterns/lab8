@@ -5,6 +5,7 @@ const app = require('../lib/app');
 const connect = require('../lib/utils/connect');
 const mongoose = require('mongoose');
 const Recipe = require('../lib/models/Recipe');
+const Event = require('../lib/models/Event');
 
 describe('recipe routes', () => {
   beforeAll(() => {
@@ -17,6 +18,30 @@ describe('recipe routes', () => {
 
   afterAll(() => {
     return mongoose.connection.close();
+  });
+
+  let event;
+  let recipe;
+
+  beforeEach(async() => {
+    event = await Recipe
+      .create({
+        name: 'cookies',
+        ingredients: [
+          { name: 'flour', amount: 1, measurement: 'cup' }
+        ],
+        directions: [
+          'preheat oven to 375',
+          'mix ingredients',
+          'put dough on cookie sheet',
+          'bake for 10 minutes'
+        ]
+      });
+
+    recipe = await Event
+      .create([
+        { recipeId: event._id, dateOfEvent: 5 - 12 - 20, notes: 'too much butter', rating: 4 }
+      ]);
   });
 
   it('creates a recipe', () => {
@@ -55,7 +80,7 @@ describe('recipe routes', () => {
   it('gets all recipes', async() => {
     const recipes = await Recipe.create([
       { name: 'cookies', directions: [] },
-      { name: 'cake', directions: [] },
+      { name: 'cake', directions: []  },
       { name: 'pie', directions: [] }
     ]);
 
@@ -65,7 +90,8 @@ describe('recipe routes', () => {
         recipes.forEach(recipe => {
           expect(res.body).toContainEqual({
             _id: recipe._id.toString(),
-            name: recipe.name
+            name: recipe.name,
+            __v: 0
           });
         });
       });
@@ -91,7 +117,7 @@ describe('recipe routes', () => {
         expect(res.body).toEqual({
           _id: expect.any(String),
           name: 'cookies',
-          ingredients: [
+          ingredients:[
             { _id: expect.any(String), name: 'flour', amount: 1, measurement: 'cup' }
           ],
           directions: [
@@ -116,7 +142,7 @@ describe('recipe routes', () => {
         'mix ingredients',
         'put dough on cookie sheet',
         'bake for 10 minutes'
-      ],
+      ]
     });
 
     return request(app)
@@ -135,6 +161,7 @@ describe('recipe routes', () => {
             'put dough on cookie sheet',
             'bake for 10 minutes'
           ],
+          event: [],
           __v: 0
         });
       });
